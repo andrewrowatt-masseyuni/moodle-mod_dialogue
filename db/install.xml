@@ -91,6 +91,7 @@
       <INDEXES>
         <INDEX NAME="authorid" UNIQUE="false" FIELDS="authorid"/>
         <INDEX NAME="conversationid" UNIQUE="false" FIELDS="conversationid"/>
+        <INDEX NAME="dialogueid" UNIQUE="false" FIELDS="dialogueid"/>
       </INDEXES>
     </TABLE>
     <TABLE NAME="dialogue_flags" COMMENT="Flags set against a dialogue, conversation or message e.g read">

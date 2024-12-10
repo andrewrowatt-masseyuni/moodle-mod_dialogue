@@ -30,5 +30,23 @@
  * @return bool
  */
 function xmldb_dialogue_upgrade($oldversion) {
+    global $DB;
+
+    $dbman = $DB->get_manager();
+
+    if ($oldversion < 2024120900) {
+        // Define index dialogueid (not unique) to be added to dialogue_messages.
+        $table = new xmldb_table('dialogue_messages');
+        $index = new xmldb_index('dialogueid', XMLDB_INDEX_NOTUNIQUE, ['dialogueid']);
+
+        // Conditionally launch add index userid.
+        if (!$dbman->index_exists($table, $index)) {
+            $dbman->add_index($table, $index);
+        }
+
+        // savepoint reached.
+        upgrade_mod_savepoint(true, 2024120900, 'dialogue');
+    }
+
     return true;
 }
