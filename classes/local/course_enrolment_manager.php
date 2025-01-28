@@ -46,18 +46,22 @@ class course_enrolment_manager extends \course_enrolment_manager {
         $fields      = 'SELECT ' . $ufields;
         $countfields = 'SELECT COUNT(u.id)';
         list($insql, $inparams) = $DB->get_in_or_equal(array_keys($groups), SQL_PARAMS_NAMED);
-
+        $capability = 'mod/dialogue:receive';
+        $context = $this->context;
+        [$enrolledsql, $enrolledparams] = get_enrolled_sql($context, $capability, 0, true);
         $sql = " FROM {user} u
                       $joins
                  JOIN {user_enrolments} ue ON ue.userid = u.id
                  JOIN {enrol} e ON ue.enrolid = e.id
                  JOIN ({groups_members} gm JOIN {groups} g ON (g.id = gm.groupid))
                       ON (u.id = gm.userid AND g.courseid = e.courseid)
+                JOIN ($enrolledsql) je ON je.id = u.id
                 WHERE $wherecondition
+                  AND u.suspended = 0
                   AND e.courseid = :courseid
                   AND g.id $insql";
         $params['courseid'] = $this->course->id;
-        $params = array_merge($params, $inparams);
+        $params = array_merge($params, $inparams, $enrolledparams);
         return $this->execute_search_queries($search, $fields, $countfields, $sql, $params, $page, $perpage, 0, false);
     }
 
@@ -106,7 +110,8 @@ class course_enrolment_manager extends \course_enrolment_manager {
         $sql = " FROM {user} u
                       $joins
                  JOIN ($enrolledsql) je ON je.id = u.id
-                WHERE $wherecondition";
+                WHERE $wherecondition
+                AND u.suspended = 0";
 
         $params = array_merge($params, $enrolledparams);
 
