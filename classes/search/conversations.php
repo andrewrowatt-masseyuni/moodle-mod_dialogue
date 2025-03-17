@@ -57,9 +57,9 @@ class conversations extends \core_search\base_mod {
                   LEFT JOIN {dialogue_conversations} c ON c.id = m.conversationid
                   LEFT JOIN {dialogue} d ON d.id = c.dialogueid
                 $contextjoin
-                  WHERE m.timemodified >= ? ORDER BY m.timemodified ASC";
+                  WHERE m.timemodified >= :timemodified ORDER BY m.timemodified ASC";
 
-        return $DB->get_recordset_sql($sql, array_merge($contextparams, [$modifiedfrom]));
+        return $DB->get_recordset_sql($sql, array_merge($contextparams, ['timemodified' => $modifiedfrom]));
     }
 
 
