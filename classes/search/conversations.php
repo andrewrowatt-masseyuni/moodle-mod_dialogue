@@ -46,7 +46,7 @@ class conversations extends \core_search\base_mod {
         global $DB;
 
         list ($contextjoin, $contextparams) = $this->get_context_restriction_sql(
-                $context, 'dialogue', 'd');
+                $context, 'dialogue', 'd', SQL_PARAMS_NAMED);
         if ($contextjoin === null) {
             return null;
         }
