@@ -46,7 +46,7 @@ class conversations extends \core_search\base_mod {
         global $DB;
 
         list ($contextjoin, $contextparams) = $this->get_context_restriction_sql(
-                $context, 'dialogue', 'd');
+                $context, 'dialogue', 'd', SQL_PARAMS_NAMED);
         if ($contextjoin === null) {
             return null;
         }
@@ -56,9 +56,10 @@ class conversations extends \core_search\base_mod {
                   {dialogue_messages} m
                   LEFT JOIN {dialogue_conversations} c ON c.id = m.conversationid
                   LEFT JOIN {dialogue} d ON d.id = c.dialogueid
-                $contextjoin ";
+                $contextjoin
+                  WHERE m.timemodified >= :timemodified ORDER BY m.timemodified ASC";
 
-        return $DB->get_recordset_sql($sql, array_merge($contextparams, [$modifiedfrom]));
+        return $DB->get_recordset_sql($sql, array_merge($contextparams, ['timemodified' => $modifiedfrom]));
     }
 
 
