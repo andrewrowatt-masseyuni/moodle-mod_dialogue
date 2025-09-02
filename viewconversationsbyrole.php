@@ -42,10 +42,17 @@ $context = context_module::instance($cm->id);
 
 require_login($course, false, $cm);
 
-$rolenames = role_fix_names(get_profile_roles($context), $context, ROLENAME_ALIAS, true);
+$profileroles = get_profile_roles($context);
+$shortnameroles = [];
 if (!$roleid) {
-    $roleid  = $DB->get_field('role', 'id', array('shortname' => 'student'), MUST_EXIST);
+    foreach ($profileroles as $roles) {
+        $roleid = $roles->id;
+        if ($roles->shortname == 'student') {
+            break;
+        }
+    }
 }
+$rolenames = role_fix_names($profileroles, $context, ROLENAME_ALIAS, true);
 
 // Now set params on pageurl will later be set on $PAGE.
 $pageurl = new moodle_url('/mod/dialogue/viewconversationsbyrole.php');
