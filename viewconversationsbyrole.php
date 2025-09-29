@@ -62,6 +62,7 @@ if ($page) {
 }
 $pageurl->param('sort', $sort);
 $pageurl->param('direction', $direction);
+$pageurl->param('roleid', $roleid);
 // Set up a return url that will be stored to session.
 $returnurl = clone($pageurl);
 $returnurl->remove_params('page');
