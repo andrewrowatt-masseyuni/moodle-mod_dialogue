@@ -53,7 +53,7 @@ class conversation_reopened extends \core\event\base {
      * @return string
      */
     public static function get_name() {
-        return get_string('eventconversationreopened', 'mod_dialogue');
+        return get_string('conversationreopened', 'mod_dialogue');
     }
 
     /**
