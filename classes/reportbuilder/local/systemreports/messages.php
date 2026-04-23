@@ -38,7 +38,7 @@ use moodle_url;
  * @copyright 2025 Andrew Rowatt
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class conversations extends system_report {
+class messages extends system_report {
 
     /**
      * Initialise the report: set the main table, joins, base conditions,

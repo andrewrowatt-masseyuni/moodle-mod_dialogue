@@ -26,7 +26,7 @@
  */
 
 use core_reportbuilder\system_report_factory;
-use mod_dialogue\reportbuilder\local\systemreports\conversations as conversations_report;
+use mod_dialogue\reportbuilder\local\systemreports\messages as messages_report;
 
 require_once(dirname(dirname(dirname(__FILE__))) . '/config.php');
 require_once('lib.php');
@@ -55,7 +55,7 @@ $dialogue = new \mod_dialogue\dialogue($cm, $course, $activityrecord);
 $renderer = $PAGE->get_renderer('mod_dialogue');
 
 $report = system_report_factory::create(
-    conversations_report::class,
+    messages_report::class,
     $context,
     'mod_dialogue',
     '',

@@ -652,7 +652,7 @@ class mod_dialogue_renderer extends plugin_renderer_base {
             $active = ($currentpage == 'report') ? array('class' => 'active') : array();
             $html .= html_writer::start_tag('li', $active);
             $reporturl = new moodle_url('report.php', array('id' => $cm->id));
-            $html .= html_writer::link($reporturl, get_string('searchconversations', 'dialogue'));
+            $html .= html_writer::link($reporturl, get_string('searchmessages', 'dialogue'));
             $html .= html_writer::end_tag('li');
         }
         // Link to bulk open rules listing.

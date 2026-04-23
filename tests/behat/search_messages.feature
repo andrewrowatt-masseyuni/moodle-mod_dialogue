@@ -1,8 +1,8 @@
 @mod @mod_dialogue @mod_dialogue_report
-Feature: Search conversations using the report page
-  In order to find specific conversations in a dialogue activity
+Feature: Search messages using the report page
+  In order to find specific messages in a dialogue activity
   As a teacher
-  I need to be able to view and filter the search-conversations report
+  I need to be able to view and filter the search-messages report
 
   Background:
     Given the following "users" exist:
@@ -27,59 +27,59 @@ Feature: Search conversations using the report page
       | dialogue1 | student2 | teacher1 | Another subject  | Another message body     |
 
   @javascript
-  Scenario: Teacher can see the Search conversations tab
+  Scenario: Teacher can see the Search messages tab
     Given I log in as "teacher1"
     And I am on "Course 1" course homepage
     And I follow "Test Dialogue"
-    Then I should see "Search conversations"
+    Then I should see "Search messages"
 
   @javascript
-  Scenario: The report page loads and shows conversations
+  Scenario: The report page loads and shows messages
     Given I log in as "teacher1"
     And I am on "Course 1" course homepage
     And I follow "Test Dialogue"
-    When I follow "Search conversations"
+    When I follow "Search messages"
     Then I should see "Hello teacher"
     And I should see "Another subject"
     And I should see "Alice Smith"
     And I should see "Bob Jones"
 
   @javascript
-  Scenario: Teacher can filter conversations by participant full name
+  Scenario: Teacher can filter messages by participant full name
     Given I log in as "teacher1"
     And I am on "Course 1" course homepage
     And I follow "Test Dialogue"
-    And I follow "Search conversations"
+    And I follow "Search messages"
     When I set the field "Full name" to "Alice"
     And I click on "Apply" "button" in the ".reportbuilder-filters" "css_element"
     Then I should see "Hello teacher"
     But I should not see "Another subject"
 
   @javascript
-  Scenario: Teacher can filter conversations by subject
+  Scenario: Teacher can filter messages by subject
     Given I log in as "teacher1"
     And I am on "Course 1" course homepage
     And I follow "Test Dialogue"
-    And I follow "Search conversations"
+    And I follow "Search messages"
     When I set the field "Subject" to "Hello"
     And I click on "Apply" "button" in the ".reportbuilder-filters" "css_element"
     Then I should see "Hello teacher"
     But I should not see "Another subject"
 
   @javascript
-  Scenario: Teacher can filter conversations by status
+  Scenario: Teacher can filter messages by status
     Given I log in as "teacher1"
     And I am on "Course 1" course homepage
     And I follow "Test Dialogue"
-    And I follow "Search conversations"
+    And I follow "Search messages"
     When I set the field "Status" to "Open"
     And I click on "Apply" "button" in the ".reportbuilder-filters" "css_element"
     Then I should see "Hello teacher"
     And I should see "Another subject"
 
   @javascript
-  Scenario: Student cannot access the search conversations report
+  Scenario: Student cannot access the search messages report
     Given I log in as "student1"
     And I am on "Course 1" course homepage
     And I follow "Test Dialogue"
-    Then I should not see "Search conversations"
+    Then I should not see "Search messages"
