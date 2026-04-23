@@ -53,6 +53,12 @@ class conversations extends system_report {
         // dialogue_conversations is the one-row-per-conversation table.
         $this->set_main_table('dialogue_conversations', 'dc');
 
+        // Register the entity names used by columns and filters in this report.
+        // These map to the SQL table aliases set up by set_main_table() and add_join().
+        $this->annotate_entity('dc', new lang_string('conversation', 'dialogue'));
+        $this->annotate_entity('dm', new lang_string('message', 'dialogue'));
+        $this->annotate_entity('u', new lang_string('user'));
+
         // Always restrict to the current dialogue instance.
         // add_base_condition_simple generates a reportbuilder-safe parameter name internally.
         $this->add_base_condition_simple('dc.dialogueid', $dialogueid);
