@@ -29,10 +29,10 @@ use lang_string;
 use moodle_url;
 
 /**
- * System report for searching dialogue conversations.
+ * System report for searching dialogue messages.
  *
- * Provides searchable/filterable columns for participant name, subject,
- * message content, attachments, status, and date.
+ * Provides searchable/filterable columns for From (author), To (other participants),
+ * subject, message content, attachments, status, and date.
  *
  * @package   mod_dialogue
  * @copyright 2025 Andrew Rowatt
@@ -50,33 +50,23 @@ class conversations extends system_report {
         $dialogueid = $this->get_parameter('dialogueid', 0, PARAM_INT);
         $cmid       = $this->get_parameter('cmid', 0, PARAM_INT);
 
-        // dialogue_conversations is the one-row-per-conversation table.
-        $this->set_main_table('dialogue_conversations', 'dc');
+        // dialogue_messages is the main table – one row per message.
+        $this->set_main_table('dialogue_messages', 'dm');
 
         // Register the entity names used by columns and filters in this report.
         // These map to the SQL table aliases set up by set_main_table() and add_join().
-        $this->annotate_entity('dc', new lang_string('conversation', 'dialogue'));
         $this->annotate_entity('dm', new lang_string('message', 'dialogue'));
+        $this->annotate_entity('dc', new lang_string('conversation', 'dialogue'));
         $this->annotate_entity('u', new lang_string('user'));
 
         // Always restrict to the current dialogue instance.
         // add_base_condition_simple generates a reportbuilder-safe parameter name internally.
-        $this->add_base_condition_simple('dc.dialogueid', $dialogueid);
+        $this->add_base_condition_simple('dm.dialogueid', $dialogueid);
 
-        // Join the latest open/closed message for each conversation using a
-        // correlated subquery so no extra named parameter is needed in the JOIN.
-        $this->add_join(
-            "JOIN {dialogue_messages} dm
-                ON dm.conversationid = dc.id
-               AND dm.conversationindex = (
-                       SELECT MAX(dm2.conversationindex)
-                         FROM {dialogue_messages} dm2
-                        WHERE dm2.conversationid = dc.id
-                          AND dm2.state IN ('open', 'closed')
-                   )"
-        );
+        // Join the conversation record (needed for subject and the conversation link).
+        $this->add_join("JOIN {dialogue_conversations} dc ON dc.id = dm.conversationid");
 
-        // Join the author of the latest message.
+        // Join the author of the message.
         $this->add_join("JOIN {user} u ON u.id = dm.authorid");
 
         // Non-privileged users only see conversations they participate in.
@@ -85,7 +75,7 @@ class conversations extends system_report {
             // required by the reportbuilder's validate_params() check.
             $visuserparam = database::generate_param_name();
             $this->add_base_condition_sql(
-                "dc.id IN (
+                "dm.conversationid IN (
                     SELECT dp.conversationid
                       FROM {dialogue_participants} dp
                      WHERE dp.userid = :{$visuserparam})",
@@ -107,20 +97,28 @@ class conversations extends system_report {
     protected function add_columns(int $cmid): void {
         global $DB;
 
-        // Participant full name.
+        // "From" column: author's full name with username appended.
+        $fromexpr = $DB->sql_concat('u.firstname', "' '", 'u.lastname', "' ('", 'u.username', "')'");
         $this->add_column(
-            (new column('fullname', new lang_string('fullname', 'dialogue'), 'u'))
+            (new column('from', new lang_string('from', 'dialogue'), 'u'))
                 ->set_type(column::TYPE_TEXT)
-                ->add_field($DB->sql_fullname('u.firstname', 'u.lastname'), 'fullname')
-                ->set_is_sortable(true)
+                ->add_field($fromexpr, 'fromname')
+                ->set_is_sortable(true, [$DB->sql_fullname('u.firstname', 'u.lastname'), 'u.username'])
         );
 
-        // Participant username.
+        // "To" column: all other participants' full names with username appended, comma-separated.
+        // Uses a correlated subquery so that every message row gets the correct recipient list.
+        $recipientexpr = $DB->sql_concat('uto.firstname', "' '", 'uto.lastname', "' ('", 'uto.username', "')'");
+        $tosubquery = "(SELECT " . $DB->sql_group_concat($recipientexpr, ', ') .
+                      " FROM {dialogue_participants} dp2" .
+                      " JOIN {user} uto ON uto.id = dp2.userid" .
+                      " WHERE dp2.conversationid = dm.conversationid" .
+                      " AND dp2.userid != dm.authorid)";
         $this->add_column(
-            (new column('username', new lang_string('username'), 'u'))
+            (new column('to', new lang_string('to', 'dialogue'), 'dm'))
                 ->set_type(column::TYPE_TEXT)
-                ->add_field('u.username', 'username')
-                ->set_is_sortable(true)
+                ->add_field($tosubquery, 'tonames')
+                ->set_is_sortable(false)
         );
 
         // Conversation subject (linked to the conversation view).
@@ -210,25 +208,14 @@ class conversations extends system_report {
     protected function add_filters(): void {
         global $DB;
 
-        // Filter by participant full name.
+        // Filter by "From" (author full name).
         $this->add_filter(
             new filter(
                 text::class,
-                'fullname',
-                new lang_string('fullname', 'dialogue'),
+                'from',
+                new lang_string('from', 'dialogue'),
                 'u',
                 $DB->sql_fullname('u.firstname', 'u.lastname')
-            )
-        );
-
-        // Filter by participant username.
-        $this->add_filter(
-            new filter(
-                text::class,
-                'username',
-                new lang_string('username'),
-                'u',
-                'u.username'
             )
         );
 
