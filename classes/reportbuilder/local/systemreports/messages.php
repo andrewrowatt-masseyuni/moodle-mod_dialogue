@@ -164,7 +164,7 @@ class messages extends system_report {
 
         // Has attachments (boolean).
         $this->add_column(
-            (new column('attachments', new lang_string('attachments', 'dialogue'), 'dm'))
+            (new column('attachments', new lang_string('attachmentscolumnheader', 'dialogue'), 'dm'))
                 ->set_type(column::TYPE_BOOLEAN)
                 ->add_field('dm.attachments', 'attachments')
                 ->set_is_sortable(true)
@@ -183,7 +183,8 @@ class messages extends system_report {
                     if (empty($state)) {
                         return '';
                     }
-                    return get_string($state, 'dialogue');
+                    $cssclass = 'state-indicator state-' . $state;
+                    return html_writer::tag('span', get_string($state, 'dialogue'), ['class' => $cssclass]);
                 })
         );
 

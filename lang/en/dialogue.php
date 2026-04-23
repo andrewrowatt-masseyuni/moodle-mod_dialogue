@@ -193,7 +193,9 @@ $string['runsuntil'] = 'Runs until ';
 $string['savedraft'] = 'Save draft';
 $string['search:activity'] = 'Dialogue - activity information';
 $string['search:conversations'] = 'Dialogue - conversation and message information';
+$string['attachmentscolumnheader'] = '<i class="fa fa-paperclip" title="Attachments"></i>';
 $string['searchmessages'] = 'Search messages';
+
 $string['searchpotentials'] = ' Search potentials...';
 $string['second'] = 'second';
 $string['seconds'] = 'seconds';
