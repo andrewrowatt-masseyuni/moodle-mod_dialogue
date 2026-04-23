@@ -71,6 +71,6 @@ echo $OUTPUT->heading(format_string($activityrecord->name));
 
 echo $renderer->tab_navigation($dialogue);
 
-echo $OUTPUT->render($report);
+echo $report->output();
 
 echo $OUTPUT->footer();
