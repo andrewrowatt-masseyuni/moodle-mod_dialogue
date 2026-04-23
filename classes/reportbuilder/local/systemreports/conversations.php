@@ -195,6 +195,12 @@ class conversations extends system_report {
                 ->set_type(column::TYPE_TIMESTAMP)
                 ->add_field('dm.timemodified', 'timemodified')
                 ->set_is_sortable(true)
+                ->add_callback(static function (?int $value): string {
+                    if ($value === null || $value === 0) {
+                        return '';
+                    }
+                    return userdate($value);
+                })
         );
     }
 
