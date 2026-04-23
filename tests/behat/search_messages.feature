@@ -45,12 +45,12 @@ Feature: Search messages using the report page
     And I should see "Bob Jones"
 
   @javascript
-  Scenario: Teacher can filter messages by participant full name
+  Scenario: Teacher can filter messages by author (From)
     Given I log in as "teacher1"
     And I am on "Course 1" course homepage
     And I follow "Test Dialogue"
     And I follow "Search messages"
-    When I set the field "Full name" to "Alice"
+    When I set the field "From" to "Alice"
     And I click on "Apply" "button" in the ".reportbuilder-filters" "css_element"
     Then I should see "Hello teacher"
     But I should not see "Another subject"
@@ -67,12 +67,12 @@ Feature: Search messages using the report page
     But I should not see "Another subject"
 
   @javascript
-  Scenario: Teacher can filter messages by status
+  Scenario: Teacher can filter messages by state
     Given I log in as "teacher1"
     And I am on "Course 1" course homepage
     And I follow "Test Dialogue"
     And I follow "Search messages"
-    When I set the field "Status" to "Open"
+    When I set the field "State" to "Open"
     And I click on "Apply" "button" in the ".reportbuilder-filters" "css_element"
     Then I should see "Hello teacher"
     And I should see "Another subject"
