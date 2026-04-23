@@ -647,6 +647,14 @@ class mod_dialogue_renderer extends plugin_renderer_base {
         $draftsurl = new moodle_url('drafts.php', array('id' => $cm->id));
         $html .= html_writer::link($draftsurl, get_string('drafts', 'dialogue'));
         $html .= html_writer::end_tag('li');
+        // Link to searchable report (teachers / managers with viewany).
+        if (has_capability('mod/dialogue:viewany', $context)) {
+            $active = ($currentpage == 'report') ? array('class' => 'active') : array();
+            $html .= html_writer::start_tag('li', $active);
+            $reporturl = new moodle_url('report.php', array('id' => $cm->id));
+            $html .= html_writer::link($reporturl, get_string('searchconversations', 'dialogue'));
+            $html .= html_writer::end_tag('li');
+        }
         // Link to bulk open rules listing.
         if (has_any_capability(array('mod/dialogue:bulkopenrulecreate', 'mod/dialogue:bulkopenruleeditany'), $context)) {
             $active = ($currentpage == 'bulkopenrules') ? array('class' => 'active') : array();
