@@ -219,6 +219,25 @@ class conversations extends system_report {
             )
         );
 
+        // Filter by "To" (other participants' full names).
+        // Uses the same correlated GROUP_CONCAT subquery as the column so the text
+        // filter can apply LIKE/CONTAINS conditions against the concatenated string.
+        $recipientexpr = $DB->sql_concat('uto.firstname', "' '", 'uto.lastname', "' ('", 'uto.username', "')'");
+        $tofilterexpr = "(SELECT " . $DB->sql_group_concat($recipientexpr, ', ') .
+                        " FROM {dialogue_participants} dp2" .
+                        " JOIN {user} uto ON uto.id = dp2.userid" .
+                        " WHERE dp2.conversationid = dm.conversationid" .
+                        " AND dp2.userid != dm.authorid)";
+        $this->add_filter(
+            new filter(
+                text::class,
+                'to',
+                new lang_string('to', 'dialogue'),
+                'dm',
+                $tofilterexpr
+            )
+        );
+
         // Filter by subject / topic.
         $this->add_filter(
             new filter(
