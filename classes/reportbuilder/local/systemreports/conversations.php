@@ -17,6 +17,7 @@
 namespace mod_dialogue\reportbuilder\local\systemreports;
 
 use core_reportbuilder\system_report;
+use core_reportbuilder\local\helpers\database;
 use core_reportbuilder\local\report\column;
 use core_reportbuilder\local\report\filter;
 use core_reportbuilder\local\filters\boolean_select;
@@ -53,7 +54,8 @@ class conversations extends system_report {
         $this->set_main_table('dialogue_conversations', 'dc');
 
         // Always restrict to the current dialogue instance.
-        $this->add_base_condition_sql('dc.dialogueid = :srdialogid', ['srdialogid' => $dialogueid]);
+        // add_base_condition_simple generates a reportbuilder-safe parameter name internally.
+        $this->add_base_condition_simple('dc.dialogueid', $dialogueid);
 
         // Join the latest open/closed message for each conversation using a
         // correlated subquery so no extra named parameter is needed in the JOIN.
@@ -73,12 +75,15 @@ class conversations extends system_report {
 
         // Non-privileged users only see conversations they participate in.
         if (!has_capability('mod/dialogue:viewany', $this->get_context())) {
+            // database::generate_param_name() produces the rbparam-prefixed names
+            // required by the reportbuilder's validate_params() check.
+            $visuserparam = database::generate_param_name();
             $this->add_base_condition_sql(
-                'dc.id IN (
+                "dc.id IN (
                     SELECT dp.conversationid
                       FROM {dialogue_participants} dp
-                     WHERE dp.userid = :srvisuser)',
-                ['srvisuser' => $USER->id]
+                     WHERE dp.userid = :{$visuserparam})",
+                [$visuserparam => $USER->id]
             );
         }
 
