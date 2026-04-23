@@ -100,7 +100,7 @@ class messages extends system_report {
         // "From" column: author's full name with username appended.
         $fromexpr = $DB->sql_concat('u.firstname', "' '", 'u.lastname', "' ('", 'u.username', "')'");
         $this->add_column(
-            (new column('from', new lang_string('from'), 'u'))
+            (new column('from', new lang_string('from', 'dialogue'), 'u'))
                 ->set_type(column::TYPE_TEXT)
                 ->add_field($fromexpr, 'fromname')
                 ->set_is_sortable(true, [$DB->sql_fullname('u.firstname', 'u.lastname'), 'u.username'])
@@ -115,7 +115,7 @@ class messages extends system_report {
                       " WHERE dp2.conversationid = dm.conversationid" .
                       " AND dp2.userid != dm.authorid)";
         $this->add_column(
-            (new column('to', new lang_string('to'), 'dm'))
+            (new column('to', new lang_string('to', 'dialogue'), 'dm'))
                 ->set_type(column::TYPE_TEXT)
                 ->add_field($tosubquery, 'tonames')
                 ->set_is_sortable(false)
@@ -214,7 +214,7 @@ class messages extends system_report {
             new filter(
                 text::class,
                 'from',
-                new lang_string('from'),
+                new lang_string('from', 'dialogue'),
                 'u',
                 $DB->sql_fullname('u.firstname', 'u.lastname')
             )
@@ -233,7 +233,7 @@ class messages extends system_report {
             new filter(
                 text::class,
                 'to',
-                new lang_string('to'),
+                new lang_string('to', 'dialogue'),
                 'dm',
                 $tofilterexpr
             )
