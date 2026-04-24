@@ -101,7 +101,7 @@ class messages extends system_report {
     protected function add_columns(int $cmid, \context $coursecontext): void {
         global $DB;
 
-        // Shared closure: returns "Name <span class="username-indicator">(username)</span>"
+        // Shared closure: returns "Name <span class="username-indicator">username</span>"
         // for pure students, or "Name <span class="role-indicator">Role</span>..." for
         // users with any other course role.
         // Note: get_user_roles() is called once per displayed user. On a paginated report
@@ -119,7 +119,7 @@ class messages extends system_report {
             $userroles = get_user_roles($ctx, $userid, false);
             if (empty($userroles)) {
                 // No course role at all – show username badge.
-                return $name . html_writer::tag('span', '(' . $username . ')', ['class' => 'username-indicator']);
+                return $name . html_writer::tag('span', $username, ['class' => 'username-indicator']);
             }
             // Deduplicate by roleid – a user may have the same role assigned multiple times
             // (e.g. via different enrolment instances) but we only want one badge per role.
@@ -134,7 +134,7 @@ class messages extends system_report {
             $shortnames = array_column($distinctroles, 'shortname');
             if (count($shortnames) === 1 && $shortnames[0] === 'student') {
                 // Pure student – show username badge.
-                return $name . html_writer::tag('span', '(' . $username . ')', ['class' => 'username-indicator']);
+                return $name . html_writer::tag('span', $username   , ['class' => 'username-indicator']);
             }
             // Non-student (or student + other roles): render a badge per distinct role.
             // role_get_name() expects a role object with 'id' = role.id (not ra.id),
