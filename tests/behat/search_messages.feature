@@ -18,6 +18,9 @@ Feature: Search messages using the report page
       | teacher1 | C1     | editingteacher |
       | student1 | C1     | student        |
       | student2 | C1     | student        |
+    And the following "permission overrides" exist:
+      | capability             | permission | role           | contextlevel | reference |
+      | mod/dialogue:viewany   | Allow      | editingteacher | Course       | C1        |
     And the following "activities" exist:
       | activity | name            | course | idnumber |
       | dialogue | Test Dialogue   | C1     | dialogue1 |
@@ -50,8 +53,11 @@ Feature: Search messages using the report page
     And I am on "Course 1" course homepage
     And I follow "Test Dialogue"
     And I follow "Search messages"
-    When I set the field "From" to "Alice"
-    And I click on "Apply" "button" in the ".reportbuilder-filters" "css_element"
+    When I click on "Filters" "button"
+    And I set the following fields in the "From" "core_reportbuilder > Filter" to these values:
+      | From operator | Contains |
+      | From value    | Alice    |
+    And I click on "Apply" "button" in the "[data-region='report-filters']" "css_element"
     Then I should see "Hello teacher"
     But I should not see "Another subject"
 
@@ -61,8 +67,11 @@ Feature: Search messages using the report page
     And I am on "Course 1" course homepage
     And I follow "Test Dialogue"
     And I follow "Search messages"
-    When I set the field "Subject" to "Hello"
-    And I click on "Apply" "button" in the ".reportbuilder-filters" "css_element"
+    When I click on "Filters" "button"
+    And I set the following fields in the "Subject" "core_reportbuilder > Filter" to these values:
+      | Subject operator | Contains |
+      | Subject value    | Hello    |
+    And I click on "Apply" "button" in the "[data-region='report-filters']" "css_element"
     Then I should see "Hello teacher"
     But I should not see "Another subject"
 
@@ -72,8 +81,11 @@ Feature: Search messages using the report page
     And I am on "Course 1" course homepage
     And I follow "Test Dialogue"
     And I follow "Search messages"
-    When I set the field "State" to "Open"
-    And I click on "Apply" "button" in the ".reportbuilder-filters" "css_element"
+    When I click on "Filters" "button"
+    And I set the following fields in the "State" "core_reportbuilder > Filter" to these values:
+      | State operator | Is equal to |
+      | State value    | Open        |
+    And I click on "Apply" "button" in the "[data-region='report-filters']" "css_element"
     Then I should see "Hello teacher"
     And I should see "Another subject"
 
