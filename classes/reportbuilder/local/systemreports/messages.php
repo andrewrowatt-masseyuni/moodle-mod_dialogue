@@ -119,16 +119,26 @@ class messages extends system_report {
             if (empty($userroles)) {
                 return $name . ' (' . $username . ')';
             }
-            $shortnames = array_column($userroles, 'shortname');
+            // Deduplicate by roleid – a user may have the same role assigned multiple times
+            // (e.g. via different enrolment instances) but we only want one badge per role.
+            $seen = [];
+            $distinctroles = [];
+            foreach ($userroles as $ra) {
+                if (!isset($seen[$ra->roleid])) {
+                    $seen[$ra->roleid] = true;
+                    $distinctroles[] = $ra;
+                }
+            }
+            $shortnames = array_column($distinctroles, 'shortname');
             if (count($shortnames) === 1 && $shortnames[0] === 'student') {
                 return $name . ' (' . $username . ')';
             }
-            // Non-student (or student + other roles): render a badge per role.
+            // Non-student (or student + other roles): render a badge per distinct role.
             // role_get_name() expects a role object with 'id' = role.id (not ra.id),
             // so we supply a minimal object with the correct primary-key value.
             // role_get_name() calls format_string() internally, so output is XSS-safe.
             $html = $name;
-            foreach ($userroles as $ra) {
+            foreach ($distinctroles as $ra) {
                 $rolerec = (object)['id' => $ra->roleid, 'shortname' => $ra->shortname, 'name' => $ra->name ?? ''];
                 $html .= html_writer::tag('span', role_get_name($rolerec, $ctx), ['class' => 'role-indicator']);
             }
