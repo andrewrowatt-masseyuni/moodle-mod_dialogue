@@ -22,7 +22,6 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class mod_dialogue_generator extends testing_module_generator {
-
     /**
      * Create a dialogue conversation including an opening message.
      *
@@ -78,8 +77,8 @@ class mod_dialogue_generator extends testing_module_generator {
         }
 
         $subject = $record['subject'] ?? 'Test subject';
-        $body    = $record['body']    ?? 'Test message body';
-        $state   = $record['state']   ?? \mod_dialogue\dialogue::STATE_OPEN;
+        $body    = $record['body'] ?? 'Test message body';
+        $state   = $record['state'] ?? \mod_dialogue\dialogue::STATE_OPEN;
 
         // Insert the conversation record.
         $conversation = new stdClass();

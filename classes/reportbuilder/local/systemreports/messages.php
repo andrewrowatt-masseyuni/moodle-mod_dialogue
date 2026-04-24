@@ -39,7 +39,6 @@ use moodle_url;
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class messages extends system_report {
-
     /**
      * Initialise the report: set the main table, joins, base conditions,
      * columns, filters and default sort order.
@@ -106,7 +105,7 @@ class messages extends system_report {
         // users with any other course role.
         // Note: get_user_roles() is called once per displayed user. On a paginated report
         // (default 25 rows) this is acceptable for an admin/teacher use case.
-        $formatuserfn = static function(
+        $formatuserfn = static function (
             string $name,
             string $username,
             int $userid,
@@ -134,7 +133,7 @@ class messages extends system_report {
             $shortnames = array_column($distinctroles, 'shortname');
             if (count($shortnames) === 1 && $shortnames[0] === 'student') {
                 // Pure student – show username badge.
-                return $name . html_writer::tag('span', $username   , ['class' => 'username-indicator']);
+                return $name . html_writer::tag('span', $username, ['class' => 'username-indicator']);
             }
             // Non-student (or student + other roles): render a badge per distinct role.
             // role_get_name() expects a role object with 'id' = role.id (not ra.id),
