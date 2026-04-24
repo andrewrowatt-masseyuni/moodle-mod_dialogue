@@ -83,7 +83,10 @@ class messages extends system_report {
             );
         }
 
-        $this->add_columns($cmid);
+        // Course context is needed by add_columns() for per-user role lookups.
+        $coursecontext = $this->get_context()->get_parent_context();
+
+        $this->add_columns($cmid, $coursecontext);
         $this->add_filters();
 
         $this->set_initial_sort_column('dm:timemodified', SORT_DESC);
@@ -93,32 +96,93 @@ class messages extends system_report {
      * Define the report columns.
      *
      * @param int $cmid Course-module ID used to build conversation links.
+     * @param \context $coursecontext Course context used for role lookups.
      */
-    protected function add_columns(int $cmid): void {
+    protected function add_columns(int $cmid, \context $coursecontext): void {
         global $DB;
 
-        // "From" column: author's full name with username appended.
-        $fromexpr = $DB->sql_concat('u.firstname', "' '", 'u.lastname', "' ('", 'u.username', "')'");
+        // Shared closure: returns "Name (username)" for pure students, or
+        // "Name <span class="role-indicator">Role</span>..." for everyone else.
+        // Note: get_user_roles() is called once per displayed user. On a paginated report
+        // (default 25 rows) this is acceptable for an admin/teacher use case.
+        $formatuserfn = static function(
+            string $name,
+            string $username,
+            int $userid,
+            \context $ctx
+        ): string {
+            // get_user_roles() returns role_assignment records (ra.*) joined with role (r.*).
+            // $ra->id  = role_assignment.id (used as array key)
+            // $ra->roleid = role.id          (the role's own primary key)
+            // $ra->shortname = role.shortname
+            $userroles = get_user_roles($ctx, $userid, false);
+            if (empty($userroles)) {
+                return $name . ' (' . $username . ')';
+            }
+            $shortnames = array_column($userroles, 'shortname');
+            if (count($shortnames) === 1 && $shortnames[0] === 'student') {
+                return $name . ' (' . $username . ')';
+            }
+            // Non-student (or student + other roles): render a badge per role.
+            // role_get_name() expects a role object with 'id' = role.id (not ra.id),
+            // so we supply a minimal object with the correct primary-key value.
+            // role_get_name() calls format_string() internally, so output is XSS-safe.
+            $html = $name;
+            foreach ($userroles as $ra) {
+                $rolerec = (object)['id' => $ra->roleid, 'shortname' => $ra->shortname, 'name' => $ra->name ?? ''];
+                $html .= html_writer::tag('span', role_get_name($rolerec, $ctx), ['class' => 'role-indicator']);
+            }
+            return $html;
+        };
+
+        // "From" column: author's name with role/username suffix.
         $this->add_column(
             (new column('from', new lang_string('from', 'dialogue'), 'u'))
                 ->set_type(column::TYPE_TEXT)
-                ->add_field($fromexpr, 'fromname')
+                ->add_field('u.id', 'authorid')
+                ->add_field('u.firstname', 'authorfirstname')
+                ->add_field('u.lastname', 'authorlastname')
+                ->add_field('u.username', 'authorusername')
                 ->set_is_sortable(true, [$DB->sql_fullname('u.firstname', 'u.lastname'), 'u.username'])
+                ->add_callback(
+                    static function ($value, \stdClass $row) use ($coursecontext, $formatuserfn): string {
+                        $name = $row->authorfirstname . ' ' . $row->authorlastname;
+                        return $formatuserfn($name, $row->authorusername, (int)$row->authorid, $coursecontext);
+                    }
+                )
         );
 
-        // "To" column: all other participants' full names with username appended, comma-separated.
-        // Uses a correlated subquery so that every message row gets the correct recipient list.
-        $recipientexpr = $DB->sql_concat('uto.firstname', "' '", 'uto.lastname', "' ('", 'uto.username', "')'");
-        $tosubquery = "(SELECT " . $DB->sql_group_concat($recipientexpr, ', ') .
-                      " FROM {dialogue_participants} dp2" .
-                      " JOIN {user} uto ON uto.id = dp2.userid" .
-                      " WHERE dp2.conversationid = dm.conversationid" .
-                      " AND dp2.userid != dm.authorid)";
+        // "To" column: other participants, each with role/username suffix.
+        // One DB query per report row to fetch participants for that conversation;
+        // acceptable for a paginated teacher/admin report (default 25 rows per page).
         $this->add_column(
             (new column('to', new lang_string('to', 'dialogue'), 'dm'))
                 ->set_type(column::TYPE_TEXT)
-                ->add_field($tosubquery, 'tonames')
+                ->add_field('dm.conversationid', 'toconvid')
+                ->add_field('dm.authorid', 'toauthorid')
                 ->set_is_sortable(false)
+                ->add_callback(
+                    static function ($value, \stdClass $row) use ($coursecontext, $formatuserfn): string {
+                        global $DB;
+                        if (empty($row->toconvid)) {
+                            return '';
+                        }
+                        $participants = $DB->get_records_sql(
+                            "SELECT u.id, u.firstname, u.lastname, u.username
+                               FROM {dialogue_participants} dp
+                               JOIN {user} u ON u.id = dp.userid
+                              WHERE dp.conversationid = :convid
+                                AND dp.userid != :authorid",
+                            ['convid' => (int)$row->toconvid, 'authorid' => (int)$row->toauthorid]
+                        );
+                        $parts = [];
+                        foreach ($participants as $user) {
+                            $name = $user->firstname . ' ' . $user->lastname;
+                            $parts[] = $formatuserfn($name, $user->username, (int)$user->id, $coursecontext);
+                        }
+                        return implode(', ', $parts);
+                    }
+                )
         );
 
         // Conversation subject (linked to the conversation view).
