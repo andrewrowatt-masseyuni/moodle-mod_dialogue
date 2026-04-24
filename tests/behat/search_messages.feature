@@ -8,6 +8,7 @@ Feature: Search messages using the report page
     Given the following "users" exist:
       | username  | firstname | lastname | email                  |
       | teacher1  | Teacher   | One      | teacher1@example.com   |
+      | teacher2  | Tony      | Two      | teacher2@example.com   |
       | student1  | Alice     | Smith    | student1@example.com   |
       | student2  | Bob       | Jones    | student2@example.com   |
     And the following "courses" exist:
@@ -16,6 +17,7 @@ Feature: Search messages using the report page
     And the following "course enrolments" exist:
       | user     | course | role           |
       | teacher1 | C1     | editingteacher |
+      | teacher2 | C1     | teacher        |
       | student1 | C1     | student        |
       | student2 | C1     | student        |
     And the following "permission overrides" exist:
@@ -28,6 +30,7 @@ Feature: Search messages using the report page
       | dialogue  | userfrom | userto   | subject          | body                     |
       | dialogue1 | student1 | teacher1 | Hello teacher    | This is my first message |
       | dialogue1 | student2 | teacher1 | Another subject  | Another message body     |
+      | dialogue1 | student1 | teacher2 | Question for Tony | Message for Tony only   |
 
   @javascript
   Scenario: Teacher can see the Search messages tab
@@ -90,8 +93,58 @@ Feature: Search messages using the report page
     And I should see "Another subject"
 
   @javascript
-  Scenario: Student cannot access the search messages report
+  Scenario: Student can see the Search messages tab
     Given I log in as "student1"
     And I am on "Course 1" course homepage
     And I follow "Test Dialogue"
-    Then I should not see "Search messages"
+    Then I should see "Search messages"
+
+  @javascript
+  Scenario: Student only sees conversations they participate in
+    Given I log in as "student1"
+    And I am on "Course 1" course homepage
+    And I follow "Test Dialogue"
+    When I follow "Search messages"
+    Then I should see "Hello teacher"
+    And I should see "Question for Tony"
+    But I should not see "Another subject"
+
+  @javascript
+  Scenario: A second student only sees their own conversation
+    Given I log in as "student2"
+    And I am on "Course 1" course homepage
+    And I follow "Test Dialogue"
+    When I follow "Search messages"
+    Then I should see "Another subject"
+    But I should not see "Hello teacher"
+    And I should not see "Question for Tony"
+
+  @javascript
+  Scenario: Non-editing teacher can see the Search messages tab
+    Given I log in as "teacher2"
+    And I am on "Course 1" course homepage
+    And I follow "Test Dialogue"
+    Then I should see "Search messages"
+
+  @javascript
+  Scenario: Non-editing teacher only sees conversations they participate in
+    Given I log in as "teacher2"
+    And I am on "Course 1" course homepage
+    And I follow "Test Dialogue"
+    When I follow "Search messages"
+    Then I should see "Question for Tony"
+    But I should not see "Hello teacher"
+    And I should not see "Another subject"
+
+  @javascript
+  Scenario: Non-editing teacher cannot surface other participants' conversations via filters
+    Given I log in as "teacher2"
+    And I am on "Course 1" course homepage
+    And I follow "Test Dialogue"
+    And I follow "Search messages"
+    When I click on "Filters" "button"
+    And I set the following fields in the "Subject" "core_reportbuilder > Filter" to these values:
+      | Subject operator | Contains |
+      | Subject value    | Another  |
+    And I click on "Apply" "button" in the "[data-region='report-filters']" "css_element"
+    Then I should not see "Another subject"

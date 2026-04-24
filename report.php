@@ -39,7 +39,16 @@ $course         = $DB->get_record('course', ['id' => $activityrecord->course], '
 $context        = context_module::instance($cm->id);
 
 require_login($course, false, $cm);
-require_capability('mod/dialogue:viewany', $context);
+// Any user able to post or read in the dialogue may open the report; the system report
+// restricts non-privileged users to conversations they participate in.
+if (!has_any_capability([
+        'mod/dialogue:viewany',
+        'mod/dialogue:open',
+        'mod/dialogue:reply',
+        'mod/dialogue:receive',
+    ], $context)) {
+    throw new required_capability_exception($context, 'mod/dialogue:viewany', 'nopermissions', '');
+}
 
 $pageurl = new moodle_url('/mod/dialogue/report.php', ['id' => $cm->id]);
 

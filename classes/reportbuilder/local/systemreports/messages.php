@@ -376,13 +376,18 @@ class messages extends system_report {
     }
 
     /**
-     * Only users who can view any conversation in this dialogue may access this report.
+     * Any user able to post or read in this dialogue may access this report.
      * Row-level visibility for non-privileged users is handled in initialise() via
      * SQL conditions on dialogue_participants; can_view() provides the page-level gate.
      *
      * @return bool
      */
     protected function can_view(): bool {
-        return has_capability('mod/dialogue:viewany', $this->get_context());
+        return has_any_capability([
+            'mod/dialogue:viewany',
+            'mod/dialogue:open',
+            'mod/dialogue:reply',
+            'mod/dialogue:receive',
+        ], $this->get_context());
     }
 }
