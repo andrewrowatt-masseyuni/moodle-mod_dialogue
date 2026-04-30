@@ -50,9 +50,20 @@ if (!has_any_capability([
     throw new required_capability_exception($context, 'mod/dialogue:viewany', 'nopermissions', '');
 }
 
+// Trigger course_module_viewed so dialogue access shows up in logs/reports,
+// matching the behaviour of view.php and conversation.php. The 'action' subkey
+// distinguishes searchreport hits from regular module views.
+$event = \mod_dialogue\event\course_module_viewed::create([
+    'objectid' => $activityrecord->id,
+    'context'  => $context,
+    'other'    => ['action' => 'searchreport'],
+]);
+$event->add_record_snapshot('course', $course);
+$event->add_record_snapshot('dialogue', $activityrecord);
+$event->trigger();
+
 $pageurl = new moodle_url('/mod/dialogue/report.php', ['id' => $cm->id]);
 
-$PAGE->set_pagetype('mod-dialogue-view-index');
 $PAGE->set_cm($cm, $course, $activityrecord);
 $PAGE->set_context($context);
 $PAGE->set_cacheable(false);

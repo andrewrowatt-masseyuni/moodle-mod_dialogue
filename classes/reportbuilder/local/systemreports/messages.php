@@ -62,6 +62,19 @@ class messages extends system_report {
         // add_base_condition_simple generates a reportbuilder-safe parameter name internally.
         $this->add_base_condition_simple('dm.dialogueid', $dialogueid);
 
+        // Restrict to user-visible message states. Drafts, bulk-automated and
+        // trashed rows must never surface in this report — only published (open)
+        // and closed conversation messages are searchable.
+        $stateopenparam = database::generate_param_name();
+        $stateclosedparam = database::generate_param_name();
+        $this->add_base_condition_sql(
+            "dm.state IN (:{$stateopenparam}, :{$stateclosedparam})",
+            [
+                $stateopenparam   => \mod_dialogue\dialogue::STATE_OPEN,
+                $stateclosedparam => \mod_dialogue\dialogue::STATE_CLOSED,
+            ]
+        );
+
         // Join the conversation record (needed for subject and the conversation link).
         $this->add_join("JOIN {dialogue_conversations} dc ON dc.id = dm.conversationid");
 
@@ -148,25 +161,36 @@ class messages extends system_report {
         };
 
         // "From" column: author's name with role/username suffix.
-        $this->add_column(
-            (new column('from', new lang_string('from', 'dialogue'), 'u'))
-                ->set_type(column::TYPE_TEXT)
-                ->add_field('u.id', 'authorid')
-                ->add_field('u.firstname', 'authorfirstname')
-                ->add_field('u.lastname', 'authorlastname')
-                ->add_field('u.username', 'authorusername')
-                ->set_is_sortable(true, [$DB->sql_fullname('u.firstname', 'u.lastname'), 'u.username'])
-                ->add_callback(
-                    static function ($value, \stdClass $row) use ($coursecontext, $formatuserfn): string {
-                        $name = $row->authorfirstname . ' ' . $row->authorlastname;
-                        return $formatuserfn($name, $row->authorusername, (int)$row->authorid, $coursecontext);
-                    }
-                )
+        // Add all the user fields fullname() needs so the column callback can produce
+        // a name that respects the site's fullnamedisplay / alternativefullnameformat
+        // settings (and the moodle/site:viewfullnames capability).
+        $authorfromcolumn = (new column('from', new lang_string('from', 'dialogue'), 'u'))
+            ->set_type(column::TYPE_TEXT)
+            ->add_field('u.id', 'authorid')
+            ->add_field('u.username', 'authorusername')
+            ->set_is_sortable(true, [$DB->sql_fullname('u.firstname', 'u.lastname'), 'u.username']);
+        foreach (\core_user\fields::for_name()->get_required_fields() as $namefield) {
+            $authorfromcolumn->add_field("u.{$namefield}", "author{$namefield}");
+        }
+        $authorfromcolumn->add_callback(
+            static function ($value, \stdClass $row) use ($coursecontext, $formatuserfn): string {
+                $author = new \stdClass();
+                foreach (\core_user\fields::for_name()->get_required_fields() as $namefield) {
+                    $author->{$namefield} = $row->{"author{$namefield}"} ?? null;
+                }
+                $name = fullname($author, has_capability('moodle/site:viewfullnames', $coursecontext));
+                return $formatuserfn($name, $row->authorusername, (int)$row->authorid, $coursecontext);
+            }
         );
+        $this->add_column($authorfromcolumn);
 
         // "To" column: other participants, each with role/username suffix.
         // One DB query per report row to fetch participants for that conversation;
         // acceptable for a paginated teacher/admin report (default 25 rows per page).
+        // SELECT pulls every field fullname() may need so the callback respects
+        // the site's fullnamedisplay / alternativefullnameformat settings.
+        $namefields = \core_user\fields::for_name()->get_required_fields();
+        $tonamefieldssql = implode(', ', array_map(static fn(string $f): string => "u.{$f}", $namefields));
         $this->add_column(
             (new column('to', new lang_string('to', 'dialogue'), 'dm'))
                 ->set_type(column::TYPE_TEXT)
@@ -174,22 +198,23 @@ class messages extends system_report {
                 ->add_field('dm.authorid', 'toauthorid')
                 ->set_is_sortable(false)
                 ->add_callback(
-                    static function ($value, \stdClass $row) use ($coursecontext, $formatuserfn): string {
+                    static function ($value, \stdClass $row) use ($coursecontext, $formatuserfn, $tonamefieldssql): string {
                         global $DB;
                         if (empty($row->toconvid)) {
                             return '';
                         }
                         $participants = $DB->get_records_sql(
-                            "SELECT u.id, u.firstname, u.lastname, u.username
+                            "SELECT u.id, u.username, {$tonamefieldssql}
                                FROM {dialogue_participants} dp
                                JOIN {user} u ON u.id = dp.userid
                               WHERE dp.conversationid = :convid
                                 AND dp.userid != :authorid",
                             ['convid' => (int)$row->toconvid, 'authorid' => (int)$row->toauthorid]
                         );
+                        $viewfullnames = has_capability('moodle/site:viewfullnames', $coursecontext);
                         $parts = [];
                         foreach ($participants as $user) {
-                            $name = $user->firstname . ' ' . $user->lastname;
+                            $name = fullname($user, $viewfullnames);
                             $parts[] = $formatuserfn($name, $user->username, (int)$user->id, $coursecontext);
                         }
                         return implode(', ', $parts);
