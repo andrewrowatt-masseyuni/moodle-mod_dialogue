@@ -113,6 +113,11 @@ class messages extends system_report {
     protected function add_columns(int $cmid, \context $coursecontext): void {
         global $DB;
 
+        // Username is part of user identity, so only viewers with
+        // moodle/site:viewuseridentity see the username badge. Computed once and
+        // captured into the closure to avoid a per-row capability check.
+        $canviewidentity = has_capability('moodle/site:viewuseridentity', $coursecontext);
+
         // Shared closure: returns "Name <span class="username-indicator">username</span>"
         // for pure students, or "Name <span class="role-indicator">Role</span>..." for
         // users with any other course role.
@@ -123,15 +128,17 @@ class messages extends system_report {
             string $username,
             int $userid,
             \context $ctx
-        ): string {
+        ) use ($canviewidentity): string {
             // get_user_roles() returns role_assignment records (ra.*) joined with role (r.*).
             // $ra->id  = role_assignment.id (used as array key)
             // $ra->roleid = role.id          (the role's own primary key)
             // $ra->shortname = role.shortname
             $userroles = get_user_roles($ctx, $userid, false);
             if (empty($userroles)) {
-                // No course role at all – show username badge.
-                return $name . html_writer::tag('span', $username, ['class' => 'username-indicator']);
+                // No course role at all – show username badge if allowed.
+                return $canviewidentity
+                    ? $name . html_writer::tag('span', $username, ['class' => 'username-indicator'])
+                    : $name;
             }
             // Deduplicate by roleid – a user may have the same role assigned multiple times
             // (e.g. via different enrolment instances) but we only want one badge per role.
@@ -145,8 +152,10 @@ class messages extends system_report {
             }
             $shortnames = array_column($distinctroles, 'shortname');
             if (count($shortnames) === 1 && $shortnames[0] === 'student') {
-                // Pure student – show username badge.
-                return $name . html_writer::tag('span', $username, ['class' => 'username-indicator']);
+                // Pure student – show username badge if allowed, otherwise just the name.
+                return $canviewidentity
+                    ? $name . html_writer::tag('span', $username, ['class' => 'username-indicator'])
+                    : $name;
             }
             // Non-student (or student + other roles): render a badge per distinct role.
             // role_get_name() expects a role object with 'id' = role.id (not ra.id),
@@ -324,7 +333,13 @@ class messages extends system_report {
         // Filter by "To" (other participants' full names).
         // Uses the same correlated GROUP_CONCAT subquery as the column so the text
         // filter can apply LIKE/CONTAINS conditions against the concatenated string.
-        $recipientexpr = $DB->sql_concat('uto.firstname', "' '", 'uto.lastname', "' ('", 'uto.username', "')'");
+        // Username is part of user identity: only include it in the filterable text
+        // for viewers with moodle/site:viewuseridentity, otherwise the filter could
+        // be used as an oracle to confirm/discover usernames the viewer can't see.
+        $coursecontext = $this->get_context()->get_parent_context();
+        $recipientexpr = has_capability('moodle/site:viewuseridentity', $coursecontext)
+            ? $DB->sql_concat('uto.firstname', "' '", 'uto.lastname', "' ('", 'uto.username', "')'")
+            : $DB->sql_concat('uto.firstname', "' '", 'uto.lastname');
         $tofilterexpr = "(SELECT " . $DB->sql_group_concat($recipientexpr, ', ') .
                         " FROM {dialogue_participants} dp2" .
                         " JOIN {user} uto ON uto.id = dp2.userid" .

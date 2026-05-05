@@ -27,11 +27,12 @@ Feature: Search messages using the report page
       | activity | name            | course | idnumber |
       | dialogue | Test Dialogue   | C1     | dialogue1 |
     And the following "mod_dialogue > conversations" exist:
-      | dialogue  | userfrom | userto   | subject              | body                     | state  |
-      | dialogue1 | student1 | teacher1 | Hello teacher        | This is my first message | open   |
-      | dialogue1 | student2 | teacher1 | Another subject      | Another message body     | open   |
-      | dialogue1 | student1 | teacher2 | Question for Tony    | Message for Tony only    | open   |
-      | dialogue1 | student1 | teacher1 | Resolved long ago    | Already wrapped up       | closed |
+      | dialogue  | userfrom | userto             | subject              | body                     | state  |
+      | dialogue1 | student1 | teacher1           | Hello teacher        | This is my first message | open   |
+      | dialogue1 | student2 | teacher1           | Another subject      | Another message body     | open   |
+      | dialogue1 | student1 | teacher2           | Question for Tony    | Message for Tony only    | open   |
+      | dialogue1 | student1 | teacher1           | Resolved long ago    | Already wrapped up       | closed |
+      | dialogue1 | teacher1 | student1,student2  | Group announcement   | Message to both students | open   |
 
   @javascript
   Scenario: Teacher can see the Search messages tab
@@ -156,6 +157,19 @@ Feature: Search messages using the report page
     Then I should see "Another subject"
     But I should not see "Hello teacher"
     And I should not see "Question for Tony"
+
+  @javascript
+  Scenario: Student does not see other participants' usernames in the report
+    Given I log in as "student2"
+    And I am on "Course 1" course homepage
+    And I follow "Test Dialogue"
+    When I follow "Search messages"
+    # The shared conversation row is visible, and the other participant's
+    # full name is shown — but their username must not be exposed because
+    # students lack moodle/site:viewuseridentity.
+    Then I should see "Group announcement"
+    And I should see "Alice Smith"
+    But I should not see "student1"
 
   @javascript
   Scenario: Non-editing teacher can see the Search messages tab
