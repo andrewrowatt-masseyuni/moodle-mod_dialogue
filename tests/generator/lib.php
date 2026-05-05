@@ -28,7 +28,8 @@ class mod_dialogue_generator extends testing_module_generator {
      * Required fields:
      *  - dialogue  (course-module idnumber, activity name, or numeric id)
      *  - userfrom  (username or id of the author)
-     *  - userto    (username or id of the other participant)
+     *  - userto    (username or id of the other participant; may be a
+     *               comma-separated list to add multiple recipients)
      *
      * Optional fields:
      *  - subject   (string, defaults to 'Test subject')
@@ -70,10 +71,19 @@ class mod_dialogue_generator extends testing_module_generator {
             $userfrom = $DB->get_record('user', ['id' => (int) $record['userfrom']], '*', MUST_EXIST);
         }
 
-        // Resolve user-to.
-        $userto = $DB->get_record('user', ['username' => $record['userto']], '*');
-        if (!$userto) {
-            $userto = $DB->get_record('user', ['id' => (int) $record['userto']], '*', MUST_EXIST);
+        // Resolve user-to. Supports a comma-separated list so a conversation can
+        // have more than one recipient (e.g. a teacher messaging two students at once).
+        $usertoids = [];
+        foreach (explode(',', (string) $record['userto']) as $usertoref) {
+            $usertoref = trim($usertoref);
+            if ($usertoref === '') {
+                continue;
+            }
+            $userto = $DB->get_record('user', ['username' => $usertoref], '*');
+            if (!$userto) {
+                $userto = $DB->get_record('user', ['id' => (int) $usertoref], '*', MUST_EXIST);
+            }
+            $usertoids[$userto->id] = $userto->id;
         }
 
         $subject = $record['subject'] ?? 'Test subject';
@@ -102,8 +112,10 @@ class mod_dialogue_generator extends testing_module_generator {
         $message->timemodified       = time();
         $message->id                 = $DB->insert_record('dialogue_messages', $message);
 
-        // Insert participant records.
-        foreach ([$userfrom->id, $userto->id] as $userid) {
+        // Insert participant records. Author plus each resolved recipient,
+        // de-duplicated in case the author was also listed as a recipient.
+        $participantids = [$userfrom->id => $userfrom->id] + $usertoids;
+        foreach ($participantids as $userid) {
             $participant = new stdClass();
             $participant->dialogueid     = $dialoguemodule->id;
             $participant->conversationid = $conversation->id;
