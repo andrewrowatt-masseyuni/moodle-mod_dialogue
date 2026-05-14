@@ -39,16 +39,9 @@ $course         = $DB->get_record('course', ['id' => $activityrecord->course], '
 $context        = context_module::instance($cm->id);
 
 require_login($course, false, $cm);
-// Any user able to post or read in the dialogue may open the report; the system report
-// restricts non-privileged users to conversations they participate in.
-if (!has_any_capability([
-        'mod/dialogue:viewany',
-        'mod/dialogue:open',
-        'mod/dialogue:reply',
-        'mod/dialogue:receive',
-    ], $context)) {
-    throw new required_capability_exception($context, 'mod/dialogue:viewany', 'nopermissions', '');
-}
+// Row-level filtering in the system report restricts non-privileged
+// users to conversations they participate in.
+require_capability('mod/dialogue:searchmessages', $context);
 
 // Trigger course_module_viewed so dialogue access shows up in logs/reports,
 // matching the behaviour of view.php and conversation.php. The 'action' subkey

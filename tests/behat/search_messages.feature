@@ -172,6 +172,19 @@ Feature: Search messages using the report page
     But I should not see "student1"
 
   @javascript
+  Scenario: Student without mod/dialogue:searchmessages capability cannot see or access the Search messages feature
+    Given the following "permission overrides" exist:
+      | capability                  | permission | role    | contextlevel | reference |
+      | mod/dialogue:searchmessages | Prevent    | student | Course       | C1        |
+    When I log in as "student1"
+    And I am on "Course 1" course homepage
+    And I follow "Test Dialogue"
+    # The tab is hidden, so the student has no UI route to the search-messages
+    # report. Because the link is absent, attempting "I follow 'Search messages'"
+    # would itself fail — covering both "see" and "access" via the UI.
+    Then I should not see "Search messages"
+
+  @javascript
   Scenario: Non-editing teacher can see the Search messages tab
     Given I log in as "teacher2"
     And I am on "Course 1" course homepage

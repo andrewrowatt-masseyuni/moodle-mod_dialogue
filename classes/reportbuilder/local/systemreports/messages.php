@@ -415,18 +415,13 @@ class messages extends system_report {
     }
 
     /**
-     * Any user able to post or read in this dialogue may access this report.
+     * Users with mod/dialogue:searchmessages can access this report.
      * Row-level visibility for non-privileged users is handled in initialise() via
      * SQL conditions on dialogue_participants; can_view() provides the page-level gate.
      *
      * @return bool
      */
     protected function can_view(): bool {
-        return has_any_capability([
-            'mod/dialogue:viewany',
-            'mod/dialogue:open',
-            'mod/dialogue:reply',
-            'mod/dialogue:receive',
-        ], $this->get_context());
+        return has_capability('mod/dialogue:searchmessages', $this->get_context());
     }
 }

@@ -83,6 +83,7 @@ $string['dialogue:reopenany'] = 'Reopen any';
 $string['dialogue:receive'] = 'Receive, who can be the recipient when opening a conversation';
 $string['dialogue:reply'] = 'Reply';
 $string['dialogue:replyany'] = 'Reply any';
+$string['dialogue:searchmessages'] = 'Search messages';
 $string['dialogue:viewany'] = 'View any';
 $string['dialogue:viewbyrole'] = 'View conversation listing by role, experimental';
 $string['dialoguecron'] = 'Dialogue cron';

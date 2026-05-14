@@ -647,16 +647,9 @@ class mod_dialogue_renderer extends plugin_renderer_base {
         $draftsurl = new moodle_url('drafts.php', array('id' => $cm->id));
         $html .= html_writer::link($draftsurl, get_string('drafts', 'dialogue'));
         $html .= html_writer::end_tag('li');
-        // Link to searchable report. Any user able to post or read in the dialogue sees the tab;
-        // row-level filtering in the report restricts non-privileged users to their own conversations.
-        if (
-            has_any_capability([
-                'mod/dialogue:viewany',
-                'mod/dialogue:open',
-                'mod/dialogue:reply',
-                'mod/dialogue:receive',
-            ], $context)
-        ) {
+        // Link to searchable report. Row-level filtering in the system report
+        // restricts non-privileged users to their own conversations.
+        if (has_capability('mod/dialogue:searchmessages', $context)) {
             $active = ($currentpage == 'report') ? ['class' => 'active'] : [];
             $html .= html_writer::start_tag('li', $active);
             $reporturl = new moodle_url('report.php', ['id' => $cm->id]);
